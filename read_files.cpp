@@ -153,11 +153,17 @@ search_next_file:
 }
 
 //**********************************************************************************
-TCHAR file_spec[PATH_MAX+1] = L"" ;
+TCHAR file_spec[PATH_MAX+1] = _T("") ;
 
+#ifdef UNICODE
 #include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR *argv[])
-// int main(int argc, char **argv)
+#else
+//lint -esym(652, wprintf)
+//lint -esym(683, wprintf)
+#define  wprintf   printf
+int main(int argc, char **argv)
+#endif
 {
    int idx, result ;
    for (idx=1; idx<argc; idx++) {
@@ -167,7 +173,7 @@ int _tmain(int argc, _TCHAR *argv[])
    }
 
    if (file_spec[0] == 0) {
-      _tcscpy(file_spec, L".");
+      _tcscpy(file_spec, _T("."));
    }
 
    uint qresult = qualify(file_spec) ;
@@ -181,7 +187,7 @@ int _tmain(int argc, _TCHAR *argv[])
    //  base_path becomes useful when one wishes to perform
    //  multiple searches in one path.
    _tcscpy(base_path, file_spec) ;
-   TCHAR *strptr = _tcsrchr(base_path, L'\\') ;
+   TCHAR *strptr = _tcsrchr(base_path, _T('\\')) ;
    if (strptr != 0) {
        strptr++ ;  //lint !e613  skip past backslash, to filename
       *strptr = 0 ;  //  strip off filename
@@ -202,6 +208,7 @@ int _tmain(int argc, _TCHAR *argv[])
       // glock17_reload_empty_speed.ogg
       // ?????????? ?????????
       for (ffdata *ftemp = ftop; ftemp != NULL; ftemp = ftemp->next) {
+#ifdef UNICODE
          //  detect unicode filenames
          if (ftemp->filename[0] > 255) {
             // puts("");
@@ -217,6 +224,9 @@ int _tmain(int argc, _TCHAR *argv[])
          else {
             wprintf(_T("%s\n"), ftemp->filename);
          }
+#else
+         printf(_T("%s\n"), ftemp->filename);
+#endif         
       }
    }
    return 0;

@@ -73,7 +73,7 @@ unsigned qualify (TCHAR *argptr)
       //  see if we have a UNC drive...
       if (drive == 0) {
          GetCurrentDirectory (250, pathptr); //lint !e534
-         _tcscat (pathptr, L"\\*");
+         _tcscat (pathptr, _T("\\*"));
          goto exit_point;
       }
    }
@@ -109,14 +109,14 @@ unsigned qualify (TCHAR *argptr)
 
    len = _tcslen (pathptr);
    if (len == 3) {
-      _tcscat (pathptr, L"*");
+      _tcscat (pathptr, _T("*"));
       qresult |= QUAL_WILDCARDS;
    }
    else {
       //  see if there are wildcards in argument.
       //  If not, see whether path is a directory or a file,
       //  or nothing.  If directory, append wildcard char
-      if (_tcspbrk (pathptr, L"*?") == NULL) {
+      if (_tcspbrk (pathptr, _T("*?")) == NULL) {
          if (*(pathptr + len - 1) == '\\') {
             len--;
             *(pathptr + len) = 0;
@@ -128,12 +128,12 @@ unsigned qualify (TCHAR *argptr)
          // handle = FindFirstFile (pathptr, &fffdata);
          if (PathIsUNC(pathptr)) {
             if (PathIsDirectory(pathptr)) {
-               _tcscpy (pathptr + len, L"\\*");   //lint !e669  possible overrun
+               _tcscpy (pathptr + len, _T("\\*"));   //lint !e669  possible overrun
                qresult |= QUAL_WILDCARDS; //  wildcards are present.
             } else if (PathFileExists(pathptr)) {
                qresult |= QUAL_IS_FILE;   //  path exists as a normal file.
             } else {
-               _tcscpy (pathptr + len, L"\\*");   //lint !e669  possible overrun
+               _tcscpy (pathptr + len, _T("\\*"));   //lint !e669  possible overrun
                qresult |= QUAL_WILDCARDS; //  wildcards are present.
             }
          } 
@@ -144,7 +144,7 @@ unsigned qualify (TCHAR *argptr)
             if (result != 0) {
                qresult |= QUAL_INV_DRIVE; //  path does not exist.
             } else if (my_stat.st_mode & S_IFDIR) {
-               _tcscpy (pathptr + len, L"\\*");   //lint !e669  possible overrun
+               _tcscpy (pathptr + len, _T("\\*"));   //lint !e669  possible overrun
                qresult |= QUAL_WILDCARDS; //  wildcards are present.
             } else {
                qresult |= QUAL_IS_FILE;   //  path exists as a normal file.
