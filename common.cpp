@@ -18,8 +18,38 @@
 //lint -esym(768, ul2uc_u::uc, ul2uc_u::ul, ul2uc_u::us)
 
 //  name of drive+path without filenames
-char base_path[PATH_MAX] ;
+TCHAR base_path[PATH_MAX] ;
 unsigned base_len ;  //  length of base_path
+
+//********************************************************************
+//  On Windows platform, try to redefine printf/fprintf
+//  so we can output code to a debug window.
+//  Also, shadow syslog() within OutputDebugStringA()
+//  Note: printf() remapping was unreliable,
+//  but syslog worked great.
+//********************************************************************
+//lint -esym(526, __builtin_va_start)
+//lint -esym(628, __builtin_va_start)
+//lint -esym(714, syslog)
+//lint -esym(759, syslog)
+//lint -esym(765, syslog)
+int syslog(const TCHAR *fmt, ...)
+{
+   TCHAR consoleBuffer[3000] ;
+   va_list al; //lint !e522
+
+   va_start(al, fmt);   //lint !e1055 !e530 !e516
+#ifdef  UNICODE
+   wvsprintf(consoleBuffer, fmt, al);   //lint !e64
+#else   
+   _vstprintf(consoleBuffer, fmt, al);   //lint !e64
+#endif   
+   // if (common_logging_enabled)
+   //    fprintf(cmlogfd, "%s", consoleBuffer) ;
+   OutputDebugString(consoleBuffer) ;
+   va_end(al);
+   return 1;
+}
 
 //**********************************************************************
 //  Modify this to build entire string and print once.

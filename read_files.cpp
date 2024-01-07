@@ -1,11 +1,13 @@
 //**********************************************************************************
-//  read_files.cpp 
+//  read_unicode_files.cpp 
 //  This will be a generic utility to identify all files specified 
 //  by a provided file spec with wildcards
 //  This is intended as a template for reading all files in current directory,
 //  then performing some task on them.  The print statement at the end
 //  can be replaced with a function call to perform the desired operation
 //  on each discovered file.
+//  
+//  This version of read_files program will add UNICODE support
 //  
 //  Written by:  Derell Licht
 //**********************************************************************************
@@ -33,20 +35,21 @@ bool show_all = true ;
 
 //lint -esym(534, FindClose)  // Ignoring return value of function
 //lint -esym(818, filespec, argv)  //could be declared as pointing to const
-//lint -e10  Expecting '}'
+//lint -e10   Expecting '}'
+//lint -e559  Size of argument inconsistent with format (in UNICODE wprintf args)
 
 //************************************************************
 ffdata *ftop  = NULL;
 ffdata *ftail = NULL;
 
 //**********************************************************************************
-int read_files(char *filespec)
+int read_files(TCHAR *filespec)
 {
    int done, fn_okay ;
    HANDLE handle;
    ffdata *ftemp;
 
-   handle = FindFirstFile (filespec, &fdata);
+   handle = FindFirstFile(filespec, &fdata);
    //  according to MSDN, Jan 1999, the following is equivalent
    //  to the preceding... unfortunately, under Win98SE, it's not...
    // handle = FindFirstFileEx(target[i], FindExInfoStandard, &fdata, 
@@ -118,8 +121,12 @@ int read_files(char *filespec)
          iconv.u[1] = fdata.nFileSizeHigh;
          ftemp->fsize = iconv.i;
 
-         ftemp->filename = (char *) malloc(strlen ((char *) fdata.cFileName) + 1);
-         strcpy (ftemp->filename, (char *) fdata.cFileName);
+         size_t slen = _tcslen ((TCHAR *) fdata.cFileName);
+         // wprintf(_T("found [%d] [%s]\n"), slen, fdata.cFileName);
+         // wprintf(_T("found [%s]\n"), fdata.cFileName);
+         ftemp->filename = (TCHAR *) malloc((slen + 1) * sizeof(TCHAR)); 
+         // ftemp->filename[0] = 0;
+         _tcscpy (ftemp->filename, (TCHAR *) fdata.cFileName);
 
          ftemp->dirflag = ftemp->attrib & FILE_ATTRIBUTE_DIRECTORY;
 
@@ -137,7 +144,7 @@ int read_files(char *filespec)
 
 search_next_file:
       //  search for another file
-      if (FindNextFile (handle, &fdata) == 0)
+      if (FindNextFile(handle, &fdata) == 0)
          done = 1;
    }
 
@@ -146,24 +153,26 @@ search_next_file:
 }
 
 //**********************************************************************************
-char file_spec[PATH_MAX+1] = "" ;
+TCHAR file_spec[PATH_MAX+1] = L"" ;
 
-int main(int argc, char **argv)
+#include "mingw-unicode.c"
+int _tmain(int argc, _TCHAR *argv[])
+// int main(int argc, char **argv)
 {
    int idx, result ;
    for (idx=1; idx<argc; idx++) {
-      char *p = argv[idx] ;
-      strncpy(file_spec, p, PATH_MAX);
+      TCHAR *p = argv[idx] ;
+      _tcsncpy(file_spec, p, PATH_MAX);
       file_spec[PATH_MAX] = 0 ;
    }
 
    if (file_spec[0] == 0) {
-      strcpy(file_spec, ".");
+      _tcscpy(file_spec, L".");
    }
 
    uint qresult = qualify(file_spec) ;
    if (qresult == QUAL_INV_DRIVE) {
-      printf("%s: 0x%X\n", file_spec, qresult);
+      wprintf(_T("%s: 0x%X\n"), file_spec, qresult);
       return 1 ;
    }
    // printf("file spec: %s\n", file_spec);
@@ -171,30 +180,44 @@ int main(int argc, char **argv)
    //  Extract base path from first filespec, and strip off filename.
    //  base_path becomes useful when one wishes to perform
    //  multiple searches in one path.
-   strcpy(base_path, file_spec) ;
-   char *strptr = strrchr(base_path, '\\') ;
+   _tcscpy(base_path, file_spec) ;
+   TCHAR *strptr = _tcsrchr(base_path, L'\\') ;
    if (strptr != 0) {
        strptr++ ;  //lint !e613  skip past backslash, to filename
       *strptr = 0 ;  //  strip off filename
    }
-   base_len = strlen(base_path) ;
+   base_len = _tcslen(base_path) ;
    // printf("base path: %s\n", base_path);
    
    result = read_files(file_spec);
    if (result < 0) {
-      printf("filespec: %s, %s\n", file_spec, strerror(-result));
+      wprintf(_T("filespec: %s, %s\n"), file_spec, strerror(-result));
       return 1 ;
    }
 
    //  now, do something with the files that you found   
-   printf("filespec: %s, %u found\n", file_spec, filecount);
+   wprintf(_T("filespec: %s, %u found\n"), file_spec, filecount);
    if (filecount > 0) {
-      puts("");
+      // filespec: D:\SourceCode\Git\eft_wp\glock17\*, 8 found
+      // glock17_reload_empty_speed.ogg
+      // ?????????? ?????????
       for (ffdata *ftemp = ftop; ftemp != NULL; ftemp = ftemp->next) {
-         printf("%s\n", ftemp->filename);
+         //  detect unicode filenames
+         if (ftemp->filename[0] > 255) {
+            // puts("");
+            // hex_dump((u8 *)ftemp->filename, 48);
+            // https://stackoverflow.com/questions/2492077/output-unicode-strings-in-windows-console            
+            SetConsoleOutputCP(CP_UTF8);
+            int bufferSize = WideCharToMultiByte(CP_UTF8, 0, ftemp->filename, -1, NULL, 0, NULL, NULL);
+            char* m = new char[bufferSize];  //lint !e737
+            WideCharToMultiByte(CP_UTF8, 0, ftemp->filename, -1, m, bufferSize, NULL, NULL);
+            wprintf(L"%S", m);   //lint !e816  Non-ANSI format specification
+            delete[] (m);
+         }
+         else {
+            wprintf(_T("%s\n"), ftemp->filename);
+         }
       }
-
    }
    return 0;
 }
-

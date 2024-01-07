@@ -6,7 +6,11 @@
 //  
 //**********************************************************************************
 
+#include <tchar.h>
+
 //lint -esym(756, u64)  global typedef not referenced
+//lint -e534  Ignoring return value of function
+
 
 typedef  unsigned long long   u64 ;
 typedef  unsigned char        uchar ;
@@ -42,10 +46,11 @@ union u64toul {
 
 //lint -esym(552, base_len)   Symbol not accessed
 //lint -esym(759, base_len)   header declaration for symbol could be moved from header to module
-extern char base_path[PATH_MAX] ;
+extern TCHAR base_path[PATH_MAX] ;
 extern unsigned base_len ;  //  length of base_path
 
 //  debug functions
+int syslog(const TCHAR *fmt, ...);
 int hex_dump(u8 *bfr, int bytes, unsigned addr);
 int hex_dump(u8 *bfr, int bytes);
 

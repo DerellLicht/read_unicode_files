@@ -11,7 +11,7 @@ struct ffdata {
    uchar          attrib ;
    FILETIME       ft ;
    ULONGLONG      fsize ;
-   char           *filename ;
+   TCHAR          *filename ;
    uchar          dirflag ;
    struct ffdata  *next ;
 } ;

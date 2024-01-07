@@ -2,7 +2,7 @@
 SHELL=cmd.exe
 USE_DEBUG = NO
 USE_64BIT = NO
-USE_UNICODE = NO
+USE_UNICODE = YES
 
 ifeq ($(USE_64BIT),YES)
 TOOLS=d:\tdm64\bin
@@ -29,6 +29,7 @@ endif
 ifeq ($(USE_UNICODE),YES)
 CFLAGS += -DUNICODE -D_UNICODE
 LFLAGS += -dUNICODE -d_UNICODE 
+LiFLAGS += -dUNICODE -d_UNICODE 
 endif
 
 LIBS=-lshlwapi
