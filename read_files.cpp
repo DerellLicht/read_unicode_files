@@ -140,13 +140,8 @@ int read_files(TCHAR *filespec)
          if (fdata.cFileName[0] > 255) {
             SetConsoleOutputCP(CP_UTF8);
             bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
-            // char* m = new char[bufferSize];  //lint !e737
             ftemp->filename = (TCHAR *) malloc(bufferSize + 1); //lint !e732
-            // WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, m, bufferSize, NULL, NULL);
             WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
-            // wprintf(L"%S", m);   //lint !e816  Non-ANSI format specification
-            // _tcscpy(ftemp->filename, m);
-            // delete[] (m);
          }
          else {
             bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
@@ -251,7 +246,7 @@ int main(int argc, char **argv)
             wprintf(_T("%s\n"), ftemp->filename);
          }
 #else
-         printf(_T("%s\n"), ftemp->filename);
+         printf("%s\n", ftemp->filename);
 #endif         
       }
    }
