@@ -28,7 +28,7 @@
 #include <windows.h>
 //lint -e87  c:\mingw\include\shlwapi.h  expression too complicated for #ifdef or #ifndef
 
-#include <shlwapi.h>
+#include <shlwapi.h> //  PathIsUNC() and kin
 #include <limits.h>
 
 #include "qualify.h"

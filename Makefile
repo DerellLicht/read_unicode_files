@@ -2,6 +2,7 @@
 SHELL=cmd.exe
 USE_DEBUG = NO
 USE_64BIT = NO
+USE_UNICODE = NO
 
 ifeq ($(USE_64BIT),YES)
 TOOLS=d:\tdm64\bin
@@ -23,6 +24,11 @@ CFLAGS += -Wno-write-strings
 ifeq ($(USE_64BIT),YES)
 CFLAGS += -DUSE_64BIT
 CxxFLAGS += -DUSE_64BIT
+endif
+
+ifeq ($(USE_UNICODE),YES)
+CFLAGS += -DUNICODE -D_UNICODE
+LFLAGS += -dUNICODE -d_UNICODE 
 endif
 
 LIBS=-lshlwapi
