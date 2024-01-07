@@ -20,7 +20,8 @@
 #include "read_files.h"
 #include "qualify.h"
 
-WIN32_FIND_DATA fdata ; //  long-filename file struct
+// WIN32_FIND_DATA fadata ; //  long-filename file struct
+WIN32_FIND_DATAW fdata ; //  long-filename file struct
 
 //  per Jason Hood, this turns off MinGW's command-line expansion, 
 //  so we can handle wildcards like we want to.                    
@@ -43,13 +44,23 @@ ffdata *ftop  = NULL;
 ffdata *ftail = NULL;
 
 //**********************************************************************************
+//  This function reads files as UNICODE, even though the program is not 
+//  compiled as UNICODE.  This permits reading Unicode filenames with any code.
+//**********************************************************************************
 int read_files(TCHAR *filespec)
 {
    int done, fn_okay ;
    HANDLE handle;
    ffdata *ftemp;
 
-   handle = FindFirstFile(filespec, &fdata);
+   WCHAR wfilespec[MAX_PATH+1];
+   int result = MultiByteToWideChar(CP_ACP, 0, filespec, -1, wfilespec, (int) _tcslen(filespec)+1);
+   if (result == 0) {
+      printf("%s: a2u failed: %u\n", filespec, (unsigned) GetLastError());
+      return -1 ;
+   }
+   
+   handle = FindFirstFileW(wfilespec, &fdata);
    //  according to MSDN, Jan 1999, the following is equivalent
    //  to the preceding... unfortunately, under Win98SE, it's not...
    // handle = FindFirstFileEx(target[i], FindExInfoStandard, &fdata, 
@@ -121,12 +132,27 @@ int read_files(TCHAR *filespec)
          iconv.u[1] = fdata.nFileSizeHigh;
          ftemp->fsize = iconv.i;
 
-         size_t slen = _tcslen ((TCHAR *) fdata.cFileName);
-         // wprintf(_T("found [%d] [%s]\n"), slen, fdata.cFileName);
-         // wprintf(_T("found [%s]\n"), fdata.cFileName);
-         ftemp->filename = (TCHAR *) malloc((slen + 1) * sizeof(TCHAR)); 
-         // ftemp->filename[0] = 0;
-         _tcscpy (ftemp->filename, (TCHAR *) fdata.cFileName);
+         // puts("");
+         // hex_dump((u8 *)fdata.cFileName, 48);
+         
+         // char ascii_fname[MAX_PATH+1];
+         int bufferSize ;
+         if (fdata.cFileName[0] > 255) {
+            SetConsoleOutputCP(CP_UTF8);
+            bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
+            // char* m = new char[bufferSize];  //lint !e737
+            ftemp->filename = (TCHAR *) malloc(bufferSize + 1); //lint !e732
+            // WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, m, bufferSize, NULL, NULL);
+            WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
+            // wprintf(L"%S", m);   //lint !e816  Non-ANSI format specification
+            // _tcscpy(ftemp->filename, m);
+            // delete[] (m);
+         }
+         else {
+            bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
+            ftemp->filename = (TCHAR *) malloc(bufferSize + 1);  //lint !e732
+            WideCharToMultiByte(CP_ACP, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
+         }
 
          ftemp->dirflag = ftemp->attrib & FILE_ATTRIBUTE_DIRECTORY;
 
@@ -144,7 +170,7 @@ int read_files(TCHAR *filespec)
 
 search_next_file:
       //  search for another file
-      if (FindNextFile(handle, &fdata) == 0)
+      if (FindNextFileW(handle, &fdata) == 0)
          done = 1;
    }
 

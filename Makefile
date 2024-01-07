@@ -2,7 +2,7 @@
 SHELL=cmd.exe
 USE_DEBUG = NO
 USE_64BIT = NO
-USE_UNICODE = YES
+USE_UNICODE = NO
 
 ifeq ($(USE_64BIT),YES)
 TOOLS=d:\tdm64\bin
