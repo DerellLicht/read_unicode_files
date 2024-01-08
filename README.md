@@ -1,5 +1,5 @@
 # read_unicode_files - generic utility for reading files from command-line path.
-This version will be adding UNICODE support.
+This version will be adding support for UNICODE filenames.
 
 ****************************************************************************************
 This project is licensed under Creative Commons CC0 1.0 Universal;  
