@@ -20,9 +20,6 @@
 #include "read_files.h"
 #include "qualify.h"
 
-// WIN32_FIND_DATA fadata ; //  long-filename file struct
-WIN32_FIND_DATAW fdata ; //  long-filename file struct
-
 //  per Jason Hood, this turns off MinGW's command-line expansion, 
 //  so we can handle wildcards like we want to.                    
 //lint -e765  external '_CRT_glob' could be made static
@@ -52,6 +49,8 @@ int read_files(TCHAR *filespec)
    int done, fn_okay ;
    HANDLE handle;
    ffdata *ftemp;
+   // WIN32_FIND_DATA fadata ; //  long-filename file struct
+   WIN32_FIND_DATAW fdata ; //  long-filename file struct
 
    WCHAR wfilespec[MAX_PATH+1];
    int result = MultiByteToWideChar(CP_ACP, 0, filespec, -1, wfilespec, (int) _tcslen(filespec)+1);
@@ -135,7 +134,7 @@ int read_files(TCHAR *filespec)
          // puts("");
          // hex_dump((u8 *)fdata.cFileName, 48);
          
-         // char ascii_fname[MAX_PATH+1];
+         //  convert Unicode filenames to UTF8
          int bufferSize ;
          if (fdata.cFileName[0] > 255) {
             SetConsoleOutputCP(CP_UTF8);
@@ -229,25 +228,7 @@ int main(int argc, char **argv)
       // glock17_reload_empty_speed.ogg
       // ?????????? ?????????
       for (ffdata *ftemp = ftop; ftemp != NULL; ftemp = ftemp->next) {
-#ifdef UNICODE
-         //  detect unicode filenames
-         if (ftemp->filename[0] > 255) {
-            // puts("");
-            // hex_dump((u8 *)ftemp->filename, 48);
-            // https://stackoverflow.com/questions/2492077/output-unicode-strings-in-windows-console            
-            SetConsoleOutputCP(CP_UTF8);
-            int bufferSize = WideCharToMultiByte(CP_UTF8, 0, ftemp->filename, -1, NULL, 0, NULL, NULL);
-            char* m = new char[bufferSize];  //lint !e737
-            WideCharToMultiByte(CP_UTF8, 0, ftemp->filename, -1, m, bufferSize, NULL, NULL);
-            wprintf(L"%S", m);   //lint !e816  Non-ANSI format specification
-            delete[] (m);
-         }
-         else {
-            wprintf(_T("%s\n"), ftemp->filename);
-         }
-#else
          printf("%s\n", ftemp->filename);
-#endif         
       }
    }
    return 0;
