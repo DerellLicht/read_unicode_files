@@ -61,7 +61,7 @@ dist:
 	zip read_files.zip $(BIN) Readme.md
 
 wc:
-	wc -l *.cpp
+	wc -l *.cpp *.c
 
 lint:
 	cmd /C "c:\lint9\lint-nt +v -width(160,4) $(LiFLAGS) -ic:\lint9 mingw.lnt -os(_lint.tmp) lintdefs.cpp $(CPPSRC)"
