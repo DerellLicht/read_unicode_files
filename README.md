@@ -14,3 +14,8 @@ You can copy, modify, distribute and perform the work, even for commercial
 purposes, all without asking permission. 
 
 ****************************************************************************************
+This program is built using the MinGW compiler package. This is an excellent,
+*FREE* compiler package which is based on the GNU compiler, but links to Windows
+libraries. &nbsp;MinGW is available from: 
+[mingw.org](https://sourceforge.net/projects/mingw/)  
+
