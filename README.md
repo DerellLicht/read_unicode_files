@@ -16,6 +16,6 @@ purposes, all without asking permission.
 ****************************************************************************************
 This program is built using the MinGW compiler package. This is an excellent,
 *FREE* compiler package which is based on the GNU compiler, but links to Windows
-libraries. &nbsp;MinGW is available from: 
-[mingw.org](https://sourceforge.net/projects/mingw/)  
+libraries. I recommend the [TDM](http://tdm-gcc.tdragon.net/) distribution, 
+to avoid certain issues with library accessibility. 
 
