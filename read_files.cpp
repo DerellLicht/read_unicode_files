@@ -58,7 +58,9 @@ int read_files(TCHAR *filespec)
       printf("%s: a2u failed: %u\n", filespec, (unsigned) GetLastError());
       return -1 ;
    }
-   
+
+   //  test path:
+   //  F:\Games\Stalker Radiophobia3\gamedata/sounds/eft_wp/glock17   
    handle = FindFirstFileW(wfilespec, &fdata);
    //  according to MSDN, Jan 1999, the following is equivalent
    //  to the preceding... unfortunately, under Win98SE, it's not...
@@ -83,17 +85,27 @@ int read_files(TCHAR *filespec)
          fn_okay = 0;
       else if ((fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY)
          fn_okay = 1;
+         
+      //  skip '.' and '..', but NOT .ncftp (for example)
+      else if (wcscmp(fdata.cFileName, L".")  == 0  ||
+               wcscmp(fdata.cFileName, L"..") == 0) {
+         fn_okay = 0;
+      }
+      else {
+         fn_okay = 1;
+      }
+         
       //  For directories, filter out "." and ".."
-      else if (fdata.cFileName[0] != '.') //  fn=".something"
-         fn_okay = 1;
-      else if (fdata.cFileName[1] == 0)   //  fn="."
-         fn_okay = 0;
-      else if (fdata.cFileName[1] != '.') //  fn="..something"
-         fn_okay = 1;
-      else if (fdata.cFileName[2] == 0)   //  fn=".."
-         fn_okay = 0;
-      else
-         fn_okay = 1;
+      // else if (fdata.cFileName[0] != '.') //  fn=".something"
+      //    fn_okay = 1;
+      // else if (fdata.cFileName[1] == 0)   //  fn="."
+      //    fn_okay = 0;
+      // else if (fdata.cFileName[1] != '.') //  fn="..something"
+      //    fn_okay = 1;
+      // else if (fdata.cFileName[2] == 0)   //  fn=".."
+      //    fn_okay = 0;
+      // else
+      //    fn_okay = 1;
 
       if (fn_okay) {
          // printf("DIRECTORY %04X %s\n", fdata.attrib, fdata.cFileName) ;
