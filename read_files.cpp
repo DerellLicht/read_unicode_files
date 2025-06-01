@@ -15,6 +15,11 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>  //  PATH_MAX
+#ifdef _lint
+//lint -esym(40, ENOMEM)
+#else
+#include <errno.h>
+#endif
 
 #include "common.h"
 #include "read_files.h"
@@ -52,16 +57,17 @@ int read_files(TCHAR *filespec)
    // WIN32_FIND_DATA fadata ; //  long-filename file struct
    WIN32_FIND_DATAW fdata ; //  long-filename file struct
 
-   WCHAR wfilespec[MAX_PATH+1];
-   int result = MultiByteToWideChar(CP_ACP, 0, filespec, -1, wfilespec, (int) _tcslen(filespec)+1);
-   if (result == 0) {
-      printf("%s: a2u failed: %u\n", filespec, (unsigned) GetLastError());
-      return -1 ;
-   }
+   // WCHAR wfilespec[MAX_PATH+1];
+   // int result = MultiByteToWideChar(CP_ACP, 0, filespec, -1, wfilespec, (int) _tcslen(filespec)+1);
+   // if (result == 0) {
+   //    printf("%s: a2u failed: %u\n", filespec, (unsigned) GetLastError());
+   //    return -1 ;
+   // }
 
    //  test path:
    //  F:\Games\Stalker Radiophobia3\gamedata/sounds/eft_wp/glock17   
-   handle = FindFirstFileW(wfilespec, &fdata);
+   // handle = FindFirstFileW(wfilespec, &fdata);
+   handle = FindFirstFile (filespec, &fdata);
    //  according to MSDN, Jan 1999, the following is equivalent
    //  to the preceding... unfortunately, under Win98SE, it's not...
    // handle = FindFirstFileEx(target[i], FindExInfoStandard, &fdata, 
@@ -147,18 +153,25 @@ int read_files(TCHAR *filespec)
          // hex_dump((u8 *)fdata.cFileName, 48);
          
          //  convert Unicode filenames to UTF8
-         int bufferSize ;
-         if (fdata.cFileName[0] > 255) {
-            SetConsoleOutputCP(CP_UTF8);
-            bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
-            ftemp->filename = (TCHAR *) malloc(bufferSize + 1); //lint !e732
-            WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
+         // int bufferSize ;
+         // if (fdata.cFileName[0] > 255) {
+         //    SetConsoleOutputCP(CP_UTF8);
+         //    bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
+         //    ftemp->filename = (TCHAR *) malloc(bufferSize + 1); //lint !e732
+         //    WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
+         // }
+         // else {
+         //    bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
+         //    ftemp->filename = (TCHAR *) malloc(bufferSize + 1);  //lint !e732
+         //    WideCharToMultiByte(CP_ACP, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
+         // }
+         ftemp->mb_len = _tcslen(fdata.cFileName) ;
+         ftemp->filename = (TCHAR *) malloc((ftemp->mb_len + 1) * sizeof(TCHAR));  //lint !e732
+         if (ftemp->filename == NULL) {
+            free (ftemp);
+            return -ENOMEM ;
          }
-         else {
-            bufferSize = WideCharToMultiByte(CP_UTF8, 0, fdata.cFileName, -1, NULL, 0, NULL, NULL);
-            ftemp->filename = (TCHAR *) malloc(bufferSize + 1);  //lint !e732
-            WideCharToMultiByte(CP_ACP, 0, fdata.cFileName, -1, ftemp->filename, bufferSize, NULL, NULL);
-         }
+         _tcscpy (ftemp->filename, fdata.cFileName);  // NOLINT
 
          ftemp->dirflag = ftemp->attrib & FILE_ATTRIBUTE_DIRECTORY;
 
@@ -176,7 +189,7 @@ int read_files(TCHAR *filespec)
 
 search_next_file:
       //  search for another file
-      if (FindNextFileW(handle, &fdata) == 0)
+      if (FindNextFile(handle, &fdata) == 0)
          done = 1;
    }
 
@@ -229,18 +242,18 @@ int main(int argc, char **argv)
    
    result = read_files(file_spec);
    if (result < 0) {
-      wprintf(_T("filespec: %s, %s\n"), file_spec, strerror(-result));
+      _tprintf(_T("filespec: %s, %s\n"), file_spec, strerror(-result));
       return 1 ;
    }
 
    //  now, do something with the files that you found   
-   wprintf(_T("filespec: %s, %u found\n"), file_spec, filecount);
+   _tprintf(_T("filespec: %s, %u found\n"), file_spec, filecount);
    if (filecount > 0) {
       // filespec: D:\SourceCode\Git\eft_wp\glock17\*, 8 found
       // glock17_reload_empty_speed.ogg
       // ?????????? ?????????
       for (ffdata *ftemp = ftop; ftemp != NULL; ftemp = ftemp->next) {
-         printf("%s\n", ftemp->filename);
+         _tprintf(_T("%s\n"), ftemp->filename);
       }
    }
    return 0;

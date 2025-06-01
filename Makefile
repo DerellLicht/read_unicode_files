@@ -2,12 +2,12 @@
 SHELL=cmd.exe
 USE_DEBUG = NO
 USE_64BIT = NO
-USE_UNICODE = NO
+USE_UNICODE = YES
 
 ifeq ($(USE_64BIT),YES)
 TOOLS=d:\tdm64\bin
 else
-TOOLS=c:\mingw\bin
+TOOLS=c:\tdm32\bin
 endif
 
 ifeq ($(USE_DEBUG),YES)

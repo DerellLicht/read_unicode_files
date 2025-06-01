@@ -1,43 +1,34 @@
-//*****************************************************************
-//  qualify() modifies a string as required to generate a         
-//  "fully-qualified" filename, which is a filename that          
-//  complete drive specifier and path name.                       
-//                                                                
-//  input:  argptr: the input filename.                           
-//                                                                
-//  output: qresult, a bit-mapped unsigned int with the           
-//                   following definitions:                       
-//                                                                
-//          bit 0 == 1 if wildcards are present.                  
-//          bit 1 == 1 if no wildcards and path does not exist.   
-//          bit 2 == 1 if no wildcards and path exists as a file. 
-//          bit 7 == 1 if specified drive is invalid.             
-//                                                                
-//*****************************************************************
-//  NOTE: this function requires -lshlwapi
-//*****************************************************************
+/******************************************************************/
+/*  qualify() modifies a string as required to generate a         */
+/*  "fully-qualified" filename, which is a filename that          */
+/*  complete drive specifier and path name.                       */
+/*                                                                */
+/*  input:  argptr: the input filename.                           */
+/*                                                                */
+/*  output: qresult, a bit-mapped unsigned int with the           */
+/*                   following definitions:                       */
+/*                                                                */
+/*          bit 0 == 1 if wildcards are present.                  */
+/*          bit 1 == 1 if no wildcards and path does not exist.   */
+/*          bit 2 == 1 if no wildcards and path exists as a file. */
+/*          bit 7 == 1 if specified drive is invalid.             */
+/*                                                                */
+/******************************************************************/
+
+//lint -esym(746, _wstat)
+//lint -esym(1055, _wstat)
+//lint -esym(526, _wstat)
+//lint -esym(628, _wstat)
 
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
-// #include <string.h>             //  strlen()
 #include <direct.h>             //  _getdrive()
 #include <sys/stat.h>
 //  lint says I don't need this header, and in fact for MSVC6.0
 //  I *don't* need it, but for gcc I do...
 #include <ctype.h>              //  tolower()
-//lint -e87  c:\mingw\include\shlwapi.h  expression too complicated for #ifdef or #ifndef
-
-//lint -esym(526, _wstat)  // symbol not defined
-//lint -esym(628, _wstat) // no argument information provided for function 
-
-// c:\mingw\include\wctype.h  99   Error 31: Redefinition of symbol '_ctype' compare with line 99, file c:\mingw\include\wctype.h, module read_files.cpp
-// c:\mingw\include\wctype.h  104  Error 31: Redefinition of symbol '_pctype_dll' compare with line 104, file c:\mingw\include\wctype.h, module read_files.cpp
-//lint -esym(31, _ctype, _pctype_dll)  //  more errors in header files
-//lint -esym(1055, _wstat)  // Symbol undeclared, assumed to return int
-//lint -esym(746, _wstat)  // call to function not made in the presence of a prototype
-
-#include <shlwapi.h> //  PathIsUNC() and kin
+#include <shlwapi.h>    // PathIsUNC(), etc
 #include <limits.h>
 #include <tchar.h>
 
@@ -47,29 +38,25 @@
 
 static TCHAR path[PATH_MAX];
 
-//lint -esym(438, drive)  Last value assigned to variable 'drive' not used
-
-
 /******************************************************************/
 unsigned qualify (TCHAR *argptr)
 {
    TCHAR *pathptr = &path[0];
-   TCHAR *strptr, *srchptr, tempchar;
+   TCHAR *strptr, *srchptr ;
    DWORD plen;
-   int drive, result ;
-   // int done ;
-   // HANDLE handle;
+   int result ;
+   struct _stat my_stat ;
    unsigned len, qresult = 0;
-   // struct _find_t c_file;
 
    //******************************************************
    //  first, determine requested drive number,            
    //  in "A: = 1" format.                                 
    //******************************************************
+   //  if arg len == 0 or arg is "."
    if (_tcslen (argptr) == 0 || (_tcslen (argptr) == 1 && *argptr == '.')
       ) {                       /*  no arguments given  */
       // printf("args=none or dot\n") ;         
-      drive = _getdrive ();     //  1 = A:
+      int drive = _getdrive ();     //  1 = A:
       //  see if we have a UNC drive...
       if (drive == 0) {
          GetCurrentDirectory (250, pathptr); //lint !e534
@@ -77,15 +64,19 @@ unsigned qualify (TCHAR *argptr)
          goto exit_point;
       }
    }
-   else if (*(argptr + 1) == ':') { /*  a drive spec was provided  */
-      // printf("args=colon\n") ;      
-      tempchar = *argptr;
-      drive = tolower (tempchar) - '`';   //  char - ('a' - 1)
-   }
-   else {                       /*  a path with no drive spec was provided  */
-      // printf("args=no drive\n") ;      
-      drive = _getdrive ();     //  1 = A:
-   }
+   //  05/26/25  These were shown unused, by clang-tidy
+   //   else if arg == "x:"
+//    else if (*(argptr + 1) == ':') { /*  a drive spec was provided  */
+//       // printf("args=colon\n") ;      
+//       TCHAR tempchar;
+//       tempchar = *argptr;
+//       drive = tolower (tempchar) - '`';   //  char - ('a' - 1)
+//    }
+//    //  else anything else
+//    else {                       /*  a path with no drive spec was provided  */
+//       // printf("args=no drive\n") ;      
+//       drive = _getdrive ();     //  1 = A:
+//    }
 
    //******************************************************
    //  strings in quotes will also foil the DOS routines;
@@ -139,7 +130,6 @@ unsigned qualify (TCHAR *argptr)
          } 
          //  process drive-oriented (non-UNC) paths
          else {
-            struct _stat my_stat ;
             result = _tstat(pathptr, &my_stat) ;
             if (result != 0) {
                qresult |= QUAL_INV_DRIVE; //  path does not exist.
@@ -150,6 +140,21 @@ unsigned qualify (TCHAR *argptr)
                qresult |= QUAL_IS_FILE;   //  path exists as a normal file.
             }
          }
+
+         // handle = FindFirstFile (pathptr, &fffdata);
+         // if (handle == INVALID_HANDLE_VALUE)
+         //   qresult |= QUAL_INV_DRIVE; //  path does not exist.
+         // else {
+         //   // if (fffdata.attrib & _A_SUBDIR)
+         //   if (fffdata.dwFileAttributes & _A_SUBDIR) {
+         //      _tcscpy (pathptr + len, "\\*");   //lint !e669  possible overrun
+         //      qresult |= QUAL_WILDCARDS; //  wildcards are present.
+         //   }
+         //   else
+         //      qresult |= QUAL_IS_FILE;   //  path exists as a normal file.
+         // 
+         //   FindClose (handle);
+         // }
       }
    }
 
@@ -160,5 +165,5 @@ unsigned qualify (TCHAR *argptr)
    _tcscpy (argptr, pathptr);
 // printf("found: [%s]\n", pathptr) ;
 // getchar() ;
-   return (qresult);
+   return (qresult); //lint !e438  drive
 }
